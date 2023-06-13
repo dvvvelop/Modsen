@@ -1,56 +1,34 @@
-import java.util.Scanner;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
 
 public class CurrencyConverter {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+    private static final String CONFIG_FILE_PATH = "config.properties";
+    private static final String EXCHANGE_RATE_KEY = "exchangeRate";
 
-        System.out.println("Добро пожаловать в калькулятор валют!");
-        System.out.println("Поддерживаемые операции: + (сложение) и - (вычитание)");
-        System.out.println("Введите значения валюты в формате: $57.75 или 57.75р");
-
-        System.out.print("Введите первое значение: ");
-        String value1 = scanner.nextLine();
-
-        System.out.print("Введите операцию (+ или -): ");
-        String operation = scanner.nextLine();
-
-        System.out.print("Введите второе значение: ");
-        String value2 = scanner.nextLine();
-
-        boolean isDollar = isDollar(value1);
-        boolean isSameCurrency = (isDollar && isDollar(value2)) || (!isDollar && !isDollar(value2));
-
-        if (!isSameCurrency) {
-            System.out.println("Ошибка: операции над разными валютами недопустимы");
-            return;
-        }
-
-        double amount1 = extractAmount(value1);
-        double amount2 = extractAmount(value2);
-        double result;
-
-        if (operation.equals("+")) {
-            result = amount1 + amount2;
-        } else if (operation.equals("-")) {
-            result = amount1 - amount2;
-        } else {
-            System.out.println("Неподдерживаемая операция");
-            return;
-        }
-
-        String currencySymbol = isDollar ? "$" : "р";
-        System.out.println("Результат: " + currencySymbol + result);
+    public static double toRubles(double dollars) {
+        double exchangeRate = getExchangeRate();
+        return round(dollars * exchangeRate);
     }
 
-    private static boolean isDollar(String value) {
-        return value.charAt(0) == '$';
+    public static double toDollars(double rubles) {
+        double exchangeRate = getExchangeRate();
+        return round(rubles / exchangeRate);
     }
 
-    private static double extractAmount(String value) {
-        if (isDollar(value)) {
-            return Double.parseDouble(value.substring(1));
-        } else {
-            return Double.parseDouble(value.substring(0, value.length() - 1));
+    private static double getExchangeRate() {
+        Properties properties = new Properties();
+        try (FileInputStream fileInputStream = new FileInputStream(CONFIG_FILE_PATH)) {
+            properties.load(fileInputStream);
+            String exchangeRateString = properties.getProperty(EXCHANGE_RATE_KEY);
+            return Double.parseDouble(exchangeRateString);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        return 0.0;
+    }
+
+    private static double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 }
