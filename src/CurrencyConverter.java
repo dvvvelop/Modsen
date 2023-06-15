@@ -1,34 +1,47 @@
-import java.io.FileInputStream;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CurrencyConverter {
-    private static final String CONFIG_FILE_PATH = "config.properties";
-    private static final String EXCHANGE_RATE_KEY = "exchangeRate";
+    private Map<String, Double> rates;
 
-    public static double toRubles(double dollars) {
-        double exchangeRate = getExchangeRate();
-        return round(dollars * exchangeRate);
+    public CurrencyConverter(String configFile) {
+        rates = loadRates(configFile);
     }
 
-    public static double toDollars(double rubles) {
-        double exchangeRate = getExchangeRate();
-        return round(rubles / exchangeRate);
-    }
-
-    private static double getExchangeRate() {
-        Properties properties = new Properties();
-        try (FileInputStream fileInputStream = new FileInputStream(CONFIG_FILE_PATH)) {
-            properties.load(fileInputStream);
-            String exchangeRateString = properties.getProperty(EXCHANGE_RATE_KEY);
-            return Double.parseDouble(exchangeRateString);
+    private Map<String, Double> loadRates(String configFile) {
+        Map<String, Double> rates = new HashMap<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(configFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split("=");
+                if (parts.length == 2) {
+                    String currency = parts[0].trim();
+                    double rate = Double.parseDouble(parts[1].trim());
+                    rates.put(currency, rate);
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return 0.0;
+        return rates;
     }
 
-    private static double round(double value) {
-        return Math.round(value * 100.0) / 100.0;
+    public double convertTo(String currency, double amount) {
+        if (rates.containsKey(currency)) {
+            double rate = rates.get(currency);
+            return amount / rate;
+        }
+        return 0;
+    }
+
+    public double convertFrom(String currency, double amount) {
+        if (rates.containsKey(currency)) {
+            double rate = rates.get(currency);
+            return amount * rate;
+        }
+        return 0;
     }
 }
