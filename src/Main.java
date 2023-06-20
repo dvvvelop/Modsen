@@ -1,16 +1,20 @@
+import java.math.BigDecimal;
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        CurrencyConverter converter = new CurrencyConverter("rates.txt");
+        CurrencyConverter converter = new CurrencyConverter();
+        Calculator calculator = new Calculator(converter);
+
         Scanner scanner = new Scanner(System.in);
-
         System.out.print("Введите выражение: ");
-        String input = scanner.nextLine();
+        String expression = scanner.nextLine();
 
-        CurrencyExpression expression = new CurrencyExpression(converter, input);
-        CurrencyValue result = expression.evaluate();
-
-        System.out.println("Результат: " + result.format());
+        try {
+            BigDecimal result = calculator.evaluateExpression(expression);
+            System.out.println("Результат: $" + result);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Ошибка: " + e.getMessage());
+        }
     }
 }

@@ -1,47 +1,44 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.Properties;
 
 public class CurrencyConverter {
-    private Map<String, Double> rates;
+    private static final String CONFIG_FILE = "config.properties";
+    public static final String DOLLAR_SYMBOL = "$";
+    public static final String RUBLE_SYMBOL = "р";
 
-    public CurrencyConverter(String configFile) {
-        rates = loadRates(configFile);
+    private BigDecimal exchangeRate;
+
+    public CurrencyConverter() {
+        loadExchangeRate();
     }
 
-    private Map<String, Double> loadRates(String configFile) {
-        Map<String, Double> rates = new HashMap<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(configFile))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split("=");
-                if (parts.length == 2) {
-                    String currency = parts[0].trim();
-                    double rate = Double.parseDouble(parts[1].trim());
-                    rates.put(currency, rate);
-                }
-            }
+    private void loadExchangeRate() {
+        Properties properties = new Properties();
+        try (FileInputStream fis = new FileInputStream(CONFIG_FILE)) {
+            properties.load(fis);
+            exchangeRate = new BigDecimal(properties.getProperty("exchange_rate"));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return rates;
     }
 
-    public double convertTo(String currency, double amount) {
-        if (rates.containsKey(currency)) {
-            double rate = rates.get(currency);
-            return amount / rate;
-        }
-        return 0;
+    public BigDecimal toDollars(BigDecimal rubles) {
+        return rubles.divide(exchangeRate, 2, BigDecimal.ROUND_HALF_UP);
     }
 
-    public double convertFrom(String currency, double amount) {
-        if (rates.containsKey(currency)) {
-            double rate = rates.get(currency);
-            return amount * rate;
+    public BigDecimal toRubles(BigDecimal dollars) {
+        return dollars.multiply(exchangeRate).setScale(2, BigDecimal.ROUND_HALF_UP);
+    }
+
+    public BigDecimal parseAmount(String amountString) {
+        if (amountString.contains(DOLLAR_SYMBOL)) {
+            return new BigDecimal(amountString.replace(DOLLAR_SYMBOL, "").replace(",", "."));
+        } else if (amountString.contains(RUBLE_SYMBOL)) {
+            return new BigDecimal(amountString.replace(RUBLE_SYMBOL, "").replace(",", "."));
+        } else {
+            throw new IllegalArgumentException("Invalid amount format.");
         }
-        return 0;
     }
 }
